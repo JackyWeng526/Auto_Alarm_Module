@@ -9,7 +9,7 @@ The format of the alarm rules and conditions in this repository is a customized 
 
 You can transform the format to suit your application situation.
 
-[Alarm rules table](https://github.com/JackyWeng526/Auto_Alarm_Module/blob/main/docs/Alarm_rules_table.PNG)
+![Alarm rules table](https://github.com/JackyWeng526/Auto_Alarm_Module/blob/main/docs/Alarm_rules_table.PNG)
 
 
 ## Line Message
@@ -18,7 +18,7 @@ By the python script and test-template in this repository, you can practice to s
 
 The content of the line message can also be modified to suit your application situation.
 
-[Line_Screenshot](https://github.com/JackyWeng526/Auto_Alarm_Module/blob/main/docs/Line_Screenshot.PNG)
+![Line_Screenshot](https://github.com/JackyWeng526/Auto_Alarm_Module/blob/main/docs/Line_Screenshot.PNG)
 
 
 ## Authors
