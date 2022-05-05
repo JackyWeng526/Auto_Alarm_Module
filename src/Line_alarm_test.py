@@ -4,19 +4,14 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR  
 import pandas as pd
 import numpy as np
-import json
 import datetime
-import requests
-import pymssql
 import os
 import uuid
-import logging
+import requests
 
 
 # File path
 BATH_PATH = os.path.dirname(os.path.abspath(__file__))
-ETC_PATH = os.path.join(BATH_PATH, "..", "etc")
-DATA_PATH = os.path.join(BATH_PATH, "..", "data")
 TEST_PATH = os.path.join(BATH_PATH, "..", "TEST")
 
 
@@ -33,25 +28,17 @@ TEST_Data_Table
 def error_log(error_txt):
     txt = {"ErrorType": error_txt, "Time": datetime.datetime.now().isoformat()}
     print(txt)
-    if "error_log.txt" not in  os.listdir(ETC_PATH):
-        f = open(os.path.join(ETC_PATH, "error_log.txt"), "w")
+    if "error_log.txt" not in  os.listdir(TEST_PATH):
+        f = open(os.path.join(TEST_PATH, "error_log.txt"), "w")
         f.write(F"{txt}\n")
         f.close()
     else:
-        f = open(os.path.join(ETC_PATH, "error_log.txt"), "a")
+        f = open(os.path.join(TEST_PATH, "error_log.txt"), "a")
         f.write(F"{txt}\n")
         f.close() 
 
 
 # %%
-def get_config():
-    with open(os.path.join(ETC_PATH, "config.json")) as jsonfile:
-        config = json.load(jsonfile)
-    return config
-
-
-# %%
-%%time
 class Test_module:
     def __init__(self):
         self.Single_rule, self.Multi_rule = self.test_rule()
@@ -109,7 +96,7 @@ class Test_module:
                         "Threshold": thredhold, 
                         "Value": data_value,
                         "Advice": rule_table.iloc[idx]["Advice"],
-                        "Status": "事件追蹤中", 
+                        "Status": "Event Tracking~", 
                         "Finish_Time": None, 
                         "Memo": None,
                         "Event_ID": str(uuid.uuid1())})
@@ -121,7 +108,7 @@ class Test_module:
                         "Event": rule_table.iloc[idx]["Event_Dismiss"], 
                         "Threshold": thredhold, 
                         "Value": data_value,
-                        "Advice": "已恢復正常", 
+                        "Advice": "Event Finished!", 
                         "Status": "Event finished", 
                         "Finish_Time": dtn})         
         return {"Activate": pd.DataFrame(Alarm_list["Activate"]), "Deactivate": pd.DataFrame(Alarm_list["Deactivate"])}
@@ -182,7 +169,7 @@ class Test_module:
                         "Threshold": thredhold, 
                         "Value": data_value,
                         "Advice": rule_table.iloc[idx]["Advice"],
-                        "Status": "事件追蹤中", 
+                        "Status": "Event Tracking~", 
                         "Finish_Time": None, 
                         "Memo": None,
                         "Event_ID": str(uuid.uuid1())})
@@ -194,7 +181,7 @@ class Test_module:
                         "Event": rule_table.iloc[idx]["Event_Dismiss"], 
                         "Threshold": thredhold, 
                         "Value": data_value,
-                        "Advice": "已恢復正常", 
+                        "Advice": "Event Finished!", 
                         "Status": "Event finished", 
                         "Finish_Time": dtn})         
         return {"Activate": pd.DataFrame(Alarm_list["Activate"]), "Deactivate": pd.DataFrame(Alarm_list["Deactivate"])}
@@ -207,6 +194,79 @@ class Test_module:
         Deact_DF = pd.concat([Single_Rule_Event["Deactivate"], Multi_Rule_Event["Deactivate"]], axis=0)
         return {"Activate": Act_DF, "Deactivate": Deact_DF}
 
-# test = Test_module().get_test_event()
-# test["Deactivate"]
-# test["Activate"]
+
+# %% Line API
+Selected_Token = "Register_your_Line_notify_api_token"
+
+def lineNotifyMessage(token, msg):
+    headers = {"Authorization": F"Bearer {token}", "Content-Type" : "application/x-www-form-urlencoded"}
+    payload = {"message": msg}
+    r = requests.post("https://notify-api.line.me/api/notify", headers=headers, params=payload)
+    return r.status_code
+
+
+def line_api_main(msg):
+    message = msg
+    line_token = Selected_Token
+    lineNotifyMessage(line_token, message)
+
+
+# %%
+# Send msg
+def get_line_msg(msg):
+    msg_dict = msg
+    total_msg = {"Activate": [], "Deactivate": []}
+    if len(msg_dict["Activate"])>0:
+        temp = msg_dict["Activate"].to_dict("records")
+        for key in temp:
+            total_msg["Activate"].append(key)
+    if len(msg_dict["Deactivate"])>0:
+        temp = msg_dict["Deactivate"].to_dict("records")
+        for key in temp:
+            total_msg["Deactivate"].append(key)    
+    return total_msg
+
+
+def line_msg(msg):
+    # Return if nothing
+    if msg == {"Activate": [], "Deactivate": []}:
+        print("No Line msg sent.")
+        return 
+    sent_msg = "\n"
+
+    # Preprocess line msg
+    if len(msg["Activate"]) > 0:
+        sent_msg += "📢事件發生: \n "
+        print(8)
+        for _msg in msg["Activate"]:
+            sent_msg += F'事件: {_msg["Event"]}\n'
+            sent_msg += F'現場數值 = {_msg["Value"]} \n '
+            sent_msg += F'邊界值 = {_msg["Threshold"]} \n '
+            sent_msg += F'Advice: {_msg["Advice"]}\n'
+            sent_msg += F'(時間戳記: {_msg["Time"]})\n\n '
+            print(9)
+        sent_msg += "\n "
+
+    if len(msg["Deactivate"]) > 0:
+        sent_msg += "🆗Event_Dismiss: \n "
+        for _msg in msg["Deactivate"]:
+            sent_msg += F'事件: {_msg["Event"]}\n'
+            sent_msg += F'{_msg["Point_ID"]} = {_msg["Value"]} \n '
+            sent_msg += F'邊界值 = {_msg["Threshold"]} \n '
+            sent_msg += F'狀態: {_msg["Advice"]}\n\n '
+
+    # Send line msg
+    line_api_main(sent_msg)
+    print("Line msg send!")
+
+
+# %%
+if __name__=="__main__":
+    # Get events
+    Test_event = Test_module().get_test_event()
+    Merge_msg = get_line_msg(Test_event)
+
+    # Send line msg
+    line_msg(Merge_msg)
+
+
