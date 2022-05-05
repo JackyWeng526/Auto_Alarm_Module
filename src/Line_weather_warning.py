@@ -178,6 +178,7 @@ def main(msg):
   message = msg
   token_Jacky = "AJ5cbCcuyz4Podeok3TAgpSXHMrqKCJx4uIRjfaJqsx"
 #   token_Weather_Warning = "sWYZ7LOam6YQdWQN8XZqUTM5N0YcESda1yNaZnts3WK"
+#   token_ecofirst_test = "nUpbTpujLAkd7V13tUAFsOc4oIm6AtYm21fpUtgOryd"
   line_token = token_Jacky
   lineNotifyMessage(line_token, message)
 
