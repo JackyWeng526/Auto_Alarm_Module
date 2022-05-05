@@ -41,7 +41,7 @@ def error_log(error_txt):
 # %%
 class Test_module:
     def __init__(self):
-        self.Single_rule, self.Multi_rule = self.test_rule()
+        self.Single_rule, self.Multi_rule, self.All_rule = self.test_rule()
         pass
 
 
@@ -49,7 +49,7 @@ class Test_module:
         rule_df = pd.read_excel(os.path.join(TEST_PATH, TEST_Condition_Table))
         Single_rule = rule_df[rule_df["Related_Point_list"].isna()]
         Multi_rule = rule_df[~rule_df["Related_Point_list"].isna()]
-        return Single_rule, Multi_rule
+        return Single_rule, Multi_rule, rule_df
 
 
     def test_data_m(self):
@@ -76,9 +76,9 @@ class Test_module:
                 print(delay_time)
                 thredhold = float(select_method_df[select_method_df["Point_ID"]==point_id]["Threshold"].values[0])
                 resample_data = df_temp.resample(F"1min").fillna("pad")
-                if method == "小於": 
+                if method == "Lower": 
                     resample_data.loc[:, "Status"] = np.where((resample_data[point_id] - thredhold)<0, 1, 0) 
-                if method == "大於":
+                if method == "Higher":
                     resample_data.loc[:, "Status"] = np.where((resample_data[point_id] - thredhold)>0, 1, 0)  ###
                 resample_data.loc[:, "Delay_Status"] = resample_data["Status"].rolling(delay_time).sum()
                 resample_data.loc[:, "Alarm"] = resample_data["Delay_Status"] - resample_data["Delay_Status"].shift(1) 
@@ -137,9 +137,9 @@ class Test_module:
                 # First condition
                 thredhold_0 = float(select_method_df[select_method_df["Point_ID"]==point_id]["Related_Threshold_list"].values[0])
                 df_0 = resample_data[[related_id]].copy()
-                if method == "小於": 
+                if method == "Lower": 
                     df_0.loc[:, "Status"] = np.where((df_0[related_id] - thredhold_0)<0, 1, 0) 
-                if method == "大於":
+                if method == "Higher":
                     df_0.loc[:, "Status"] = np.where((df_0[related_id] - thredhold_0)>0, 1, 0) 
                 df_0.loc[:, "Delay_Status"] = df_0["Status"].rolling(delay_time).sum()
                 df_0 = df_0.dropna()
@@ -148,9 +148,9 @@ class Test_module:
                 # Main Condition
                 thredhold = float(select_method_df[select_method_df["Point_ID"]==point_id]["Threshold"].values[0])
                 df_main = resample_data[[point_id]].copy()
-                if method == "小於": 
+                if method == "Lower": 
                     df_main.loc[:, "Status"] = np.where((df_main[point_id] - thredhold)<0, 1, 0) 
-                if method == "大於":
+                if method == "Higher":
                     df_main.loc[:, "Status"] = np.where((df_main[point_id] - thredhold)>0, 1, 0)  ###
                 df_main.loc[:, "Delay_Status"] = df_main["Status"].rolling(delay_time).sum()
                 df_main.loc[:, "Alarm"] = df_main["Delay_Status"] - df_main["Delay_Status"].shift(1) 
@@ -236,24 +236,24 @@ def line_msg(msg):
 
     # Preprocess line msg
     if len(msg["Activate"]) > 0:
-        sent_msg += "📢事件發生: \n "
+        sent_msg += "📢Event happens: \n "
         print(8)
         for _msg in msg["Activate"]:
-            sent_msg += F'事件: {_msg["Event"]}\n'
-            sent_msg += F'現場數值 = {_msg["Value"]} \n '
-            sent_msg += F'邊界值 = {_msg["Threshold"]} \n '
+            sent_msg += F'Event: {_msg["Event"]}\n'
+            sent_msg += F'Real-time data = {_msg["Value"]} \n '
+            sent_msg += F'Threshold = {_msg["Threshold"]} \n '
             sent_msg += F'Advice: {_msg["Advice"]}\n'
-            sent_msg += F'(時間戳記: {_msg["Time"]})\n\n '
+            sent_msg += F'(Timestamp: {_msg["Time"]})\n\n '
             print(9)
         sent_msg += "\n "
 
     if len(msg["Deactivate"]) > 0:
         sent_msg += "🆗Event_Dismiss: \n "
         for _msg in msg["Deactivate"]:
-            sent_msg += F'事件: {_msg["Event"]}\n'
+            sent_msg += F'Event: {_msg["Event"]}\n'
             sent_msg += F'{_msg["Point_ID"]} = {_msg["Value"]} \n '
-            sent_msg += F'邊界值 = {_msg["Threshold"]} \n '
-            sent_msg += F'狀態: {_msg["Advice"]}\n\n '
+            sent_msg += F'Threshold = {_msg["Threshold"]} \n '
+            sent_msg += F'Status: {_msg["Advice"]}\n\n '
 
     # Send line msg
     line_api_main(sent_msg)
